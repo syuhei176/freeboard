@@ -3036,6 +3036,95 @@ $.extend(freeboard, jQuery.eventEmitter);
 // └────────────────────────────────────────────────────────────────────┘ \\
 
 (function () {
+
+	var milkcocoaDatasource = function (settings, updateCallback) {
+		var self = this;
+
+		if(settings.apikey && settings.apisecret) {
+	        var milkcocoa = MilkCocoa.connectWithApiKey(settings.appid + '.mlkcca.com', settings.apikey, settings.apisecret);
+		}else{
+			var milkcocoa = new MilkCocoa(settings.appid + '.mlkcca.com');
+		}
+		var ds = milkcocoa.dataStore(settings.datastore);
+
+		ds.on(settings.api, onData);
+
+		if(settings.api == 'push') {
+			ds.stream().size(1).next(function(err, data) {
+				if(err) {
+					throw err;
+				}
+				data.forEach(onData);
+			});
+		}
+
+		function onData(e) {
+			updateCallback(e);
+		}
+
+		this.updateNow = function () {
+			//updateCallback(data);
+		}
+
+		this.onDispose = function () {
+
+		}
+
+		this.onSettingsChanged = function (newSettings) {
+			
+		}
+	};
+
+	freeboard.loadDatasourcePlugin({
+		type_name: "Milkcocoa",
+		settings: [
+			{
+				name: "appid",
+				display_name: "AppID",
+				type: "text",
+				description: 'Milkcocoa App ID'
+			},
+			{
+				name: "apikey",
+				display_name: "API Key",
+				type: "text",
+				description: 'Milkcocoa API Key'
+			},
+			{
+				name: "apisecret",
+				display_name: "API Secret",
+				type: "text",
+				description: 'Milkcocoa API Secret'
+			},
+			{
+				name: "datastore",
+				display_name: "DataStore",
+				type: "text",
+				description: 'Milkcocoa DataStore Name. milkcocoa.dataStore("datastore name");',
+				default_value: 'message'
+			},
+			{
+				name: "api",
+				display_name: "API",
+				type: "option",
+				options: [
+					{
+						name: "send",
+						value: "send"
+					},
+					{
+						name: "push",
+						value: "push"
+					}
+				],
+				default_value: 'send'
+			}
+		],
+		newInstance: function (settings, newInstanceCallback, updateCallback) {
+			newInstanceCallback(new milkcocoaDatasource(settings, updateCallback));
+		}
+	});
+
 	var jsonDatasource = function (settings, updateCallback) {
 		var self = this;
 		var updateTimer = null;
